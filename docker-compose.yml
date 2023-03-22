@@ -1,0 +1,16 @@
+version: '3.9'
+
+services:
+
+  server:
+    image: bqat-stateless
+    build: .
+    shm_size: 2gb
+    ports:
+      - 8848:8848
+    environment:
+      DEBUG_MODE: YES
+    volumes:
+      - ./api:/app/api
+      - ./bqat:/app/bqat
+      - ./tests:/app/tests
