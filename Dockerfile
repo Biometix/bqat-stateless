@@ -63,6 +63,7 @@ RUN conda-lock install --name nisqa conda-lock.yml && \
     mamba clean -afy
 
 COPY bqat ./bqat/
+COPY api ./api/
 
 ENTRYPOINT [ "/bin/bash", "-l", "-c" ]
 CMD [ "python3.8 -m api" ]
