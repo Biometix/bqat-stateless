@@ -13,6 +13,7 @@ Biometric Quality Assessment Tool (BQAT) - Stateless
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 > [biometix.github.io](https://biometix.github.io/)
+
 BQAT is a biometric quality assessment tool for generating and analysing given biometric samples’ quality to international standards as well as to customized metrics. The BQAT tool functions by taking an input directory of biometric data and will produce both the raw quality information as well as an analysis report.
 
 ## __Modules__
@@ -29,6 +30,10 @@ The face image assessment provides metrics includes head pose, smile detection, 
 
 The face image assessment provides various quality attributes, features, and ISO metrics.
 
+### Speech:
+
+The speech assessment provides various quality metrics, including naturalness, coloration, noisiness, etc.
+
 ## __Contributing__
 
 We welcome all kinds of contributions, including but not limited to bug reports, proposals and requests of new features, and of course pull requests.
@@ -37,11 +42,11 @@ We use GitHub issues for tracking requests and bugs. Contributors are expected t
 
 ### Submit changes:
 
-- Open an [Issue](https://github.com/Biometix/bqat-cli/issues) with description of motivates.
+- Open an [Issue](https://github.com/Biometix/bqat-stateless/issues) with description of motivates.
 
 - Discuss the proposed changes with other users and the maintainers
 
-- Open a [Pull Request](https://github.com/Biometix/bqat-cli/pulls)
+- Open a [Pull Request](https://github.com/Biometix/bqat-stateless/pulls)
 
 - Ensure all CI tests pass
 
