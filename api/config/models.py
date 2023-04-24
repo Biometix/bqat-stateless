@@ -7,3 +7,4 @@ class Modality(str, Enum):
     face = "face"
     iris = "iris"
     fingerprint = "fingerprint"
+    speech = "speech"
