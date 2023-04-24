@@ -37,13 +37,14 @@ async def scan_file(
 
     try:
         result = {
-            "results": scan(file=str(temp_file), **{"mode": modality}),
-            "engine": f"{__name__} {__version__}",
+            "results": scan(file=str(temp_file), **{"mode": modality, "type": "file"}),
+            "engine": f"BQAT-core {__version__}",
         }
-    except:
+        result["results"].update({"file": file.filename})
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"please specify biometric modality",
+            detail=f"scan failed, please request params: {str(e)}",
         )
     finally:
         shutil.rmtree(str(temp))
