@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 
 from api.config.models import Modality, Task
 from bqat.bqat_core import __version__, scan
-from base64 import standard_b64decode
+from base64 import standard_b64decode, urlsafe_b64decode
 
 router = APIRouter()
 
@@ -49,11 +49,13 @@ async def scan_file(
 
 @router.post("/base64", summary="Post biometric file (base64) for assessment")
 async def scan_file(
+    urlsafe: bool = True,
     task: Task = Body(...),
 ):
     """
     Upload a biometric file (base64) for quality assessment:
 
+    - **urlsafe**: (bool) urlsafe encoded or not.
     - **modality**: specify modality of the biometric.
     - **type**: biometric file type (png, jpg, wav, jp2, etc.).
     - **data**: biometric file encoded as base64 string.
@@ -63,7 +65,7 @@ async def scan_file(
     temp = Path("temp")
     if not temp.exists():
         temp.mkdir(parents=True)
-    data = standard_b64decode(task.data)
+    data = urlsafe_b64decode(task.data) if urlsafe else standard_b64decode(task.data)
     temp_file = Path("temp") / f"{str(uuid4())}.{task.type}"
     with open(temp_file, "wb") as out:
         out.write(data)
