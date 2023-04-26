@@ -31,9 +31,17 @@ async def scan_file(
     with open(temp_file, "wb") as out:
         out.write(data)
 
+    options = {"type": "file"}
+    if modality == "face":
+        options.update({"engine": "biqt"})
+
     try:
         result = {
-            "results": scan(file=str(temp_file), **{"mode": modality, "type": "file"}),
+            "results": scan(
+                file=str(temp_file),
+                mode=modality,
+                **options,
+            ),
             "engine": f"BQAT-core {__version__}",
         }
         result["results"].update({"file": file.filename})
@@ -65,15 +73,36 @@ async def scan_file(
     temp = Path("temp")
     if not temp.exists():
         temp.mkdir(parents=True)
-    data = urlsafe_b64decode(task.data) if urlsafe else standard_b64decode(task.data)
+    try:
+        data = (
+            urlsafe_b64decode(task.data) if urlsafe else standard_b64decode(task.data)
+        )
+    except:
+        try:
+            data = (
+                urlsafe_b64decode(task.data + "=")
+                if urlsafe
+                else standard_b64decode(task.data + "=")
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"failed to decode base64 data: {str(e)}",
+            )
     temp_file = Path("temp") / f"{str(uuid4())}.{task.type}"
     with open(temp_file, "wb") as out:
         out.write(data)
 
+    options = {"type": "file"}
+    if task.modality == "face":
+        options.update({"engine": "biqt"})
+
     try:
         result = {
             "results": scan(
-                file=str(temp_file), **{"mode": task.modality, "type": "file"}
+                file=str(temp_file),
+                mode=task.modality,
+                **options,
             ),
             "engine": f"BQAT-core {__version__}",
         }
