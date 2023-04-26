@@ -2,7 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 
 from api.config import Settings
-from api.routes.index import router as index
+from api.routes.scan import router as scan
 from bqat.bqat_core import __version__ as ver
 
 description = """
@@ -22,6 +22,10 @@ app = FastAPI(
     title="BQAT-Stateless",
     description=description,
     version=ver,
+    contact={
+        "url": "https://biometix.com/",
+        "email": "info@biometix.com",
+    },
     license_info={
         "name": "Apache 2.0",
         "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
@@ -30,7 +34,7 @@ app = FastAPI(
 settings = Settings()
 
 
-app.include_router(index)
+app.include_router(scan)
 
 
 def create_app():

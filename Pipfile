@@ -19,7 +19,10 @@ pandas = "*"
 
 [dev-packages]
 pytest = "*"
-tox = "*"
+genbadge = {extras = ["coverage", "tests"], version = "*"}
+pytest-html = "*"
+coverage = "*"
+httpx = "*"
 
 [requires]
 python_version = "3.8"
