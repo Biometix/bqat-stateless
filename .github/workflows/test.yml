@@ -21,7 +21,6 @@ jobs:
         run: |
           docker pull ghcr.io/biometix/bqat-stateless:test
           docker tag ghcr.io/biometix/bqat-stateless:test ghcr.io/biometix/bqat-stateless:latest
-      # - name: Run Test Scripts
-      #   run: |
-      #     mkdir data
-      #     ./test.sh
+      - name: Run Test Scripts
+        run: |
+          ./test.sh
