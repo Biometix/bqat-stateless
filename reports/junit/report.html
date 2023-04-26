@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>report.html</title>
+    <style>body {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  /* do not increase min-width as some may use split screens */
+  min-width: 800px;
+  color: #999;
+}
+
+h1 {
+  font-size: 24px;
+  color: black;
+}
+
+h2 {
+  font-size: 16px;
+  color: black;
+}
+
+p {
+  color: black;
+}
+
+a {
+  color: #999;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+/******************************
+ * SUMMARY INFORMATION
+ ******************************/
+#environment td {
+  padding: 5px;
+  border: 1px solid #E6E6E6;
+}
+#environment tr:nth-child(odd) {
+  background-color: #f6f6f6;
+}
+
+/******************************
+ * TEST RESULT COLORS
+ ******************************/
+span.passed,
+.passed .col-result {
+  color: green;
+}
+
+span.skipped,
+span.xfailed,
+span.rerun,
+.skipped .col-result,
+.xfailed .col-result,
+.rerun .col-result {
+  color: orange;
+}
+
+span.error,
+span.failed,
+span.xpassed,
+.error .col-result,
+.failed .col-result,
+.xpassed .col-result {
+  color: red;
+}
+
+/******************************
+ * RESULTS TABLE
+ *
+ * 1. Table Layout
+ * 2. Extra
+ * 3. Sorting items
+ *
+ ******************************/
+/*------------------
+ * 1. Table Layout
+ *------------------*/
+#results-table {
+  border: 1px solid #e6e6e6;
+  color: #999;
+  font-size: 12px;
+  width: 100%;
+}
+#results-table th,
+#results-table td {
+  padding: 5px;
+  border: 1px solid #E6E6E6;
+  text-align: left;
+}
+#results-table th {
+  font-weight: bold;
+}
+
+/*------------------
+ * 2. Extra
+ *------------------*/
+.log {
+  background-color: #e6e6e6;
+  border: 1px solid #e6e6e6;
+  color: black;
+  display: block;
+  font-family: "Courier New", Courier, monospace;
+  height: 230px;
+  overflow-y: scroll;
+  padding: 5px;
+  white-space: pre-wrap;
+}
+.log:only-child {
+  height: inherit;
+}
+
+div.image {
+  border: 1px solid #e6e6e6;
+  float: right;
+  height: 240px;
+  margin-left: 5px;
+  overflow: hidden;
+  width: 320px;
+}
+div.image img {
+  width: 320px;
+}
+
+div.video {
+  border: 1px solid #e6e6e6;
+  float: right;
+  height: 240px;
+  margin-left: 5px;
+  overflow: hidden;
+  width: 320px;
+}
+div.video video {
+  overflow: hidden;
+  width: 320px;
+  height: 240px;
+}
+
+.collapsed {
+  display: none;
+}
+
+.expander::after {
+  content: " (show details)";
+  color: #BBB;
+  font-style: italic;
+  cursor: pointer;
+}
+
+.collapser::after {
+  content: " (hide details)";
+  color: #BBB;
+  font-style: italic;
+  cursor: pointer;
+}
+
+/*------------------
+ * 3. Sorting items
+ *------------------*/
+.sortable {
+  cursor: pointer;
+}
+
+.sort-icon {
+  font-size: 0px;
+  float: left;
+  margin-right: 5px;
+  margin-top: 5px;
+  /*triangle*/
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+}
+.inactive .sort-icon {
+  /*finish triangle*/
+  border-top: 8px solid #E6E6E6;
+}
+.asc.active .sort-icon {
+  /*finish triangle*/
+  border-bottom: 8px solid #999;
+}
+.desc.active .sort-icon {
+  /*finish triangle*/
+  border-top: 8px solid #999;
+}
+</style></head>
+  <body onLoad="init()">
+    <script>/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+
+function toArray(iter) {
+    if (iter === null) {
+        return null;
+    }
+    return Array.prototype.slice.call(iter);
+}
+
+function find(selector, elem) { // eslint-disable-line no-redeclare
+    if (!elem) {
+        elem = document;
+    }
+    return elem.querySelector(selector);
+}
+
+function findAll(selector, elem) {
+    if (!elem) {
+        elem = document;
+    }
+    return toArray(elem.querySelectorAll(selector));
+}
+
+function sortColumn(elem) {
+    toggleSortStates(elem);
+    const colIndex = toArray(elem.parentNode.childNodes).indexOf(elem);
+    let key;
+    if (elem.classList.contains('result')) {
+        key = keyResult;
+    } else if (elem.classList.contains('links')) {
+        key = keyLink;
+    } else {
+        key = keyAlpha;
+    }
+    sortTable(elem, key(colIndex));
+}
+
+function showAllExtras() { // eslint-disable-line no-unused-vars
+    findAll('.col-result').forEach(showExtras);
+}
+
+function hideAllExtras() { // eslint-disable-line no-unused-vars
+    findAll('.col-result').forEach(hideExtras);
+}
+
+function showExtras(colresultElem) {
+    const extras = colresultElem.parentNode.nextElementSibling;
+    const expandcollapse = colresultElem.firstElementChild;
+    extras.classList.remove('collapsed');
+    expandcollapse.classList.remove('expander');
+    expandcollapse.classList.add('collapser');
+}
+
+function hideExtras(colresultElem) {
+    const extras = colresultElem.parentNode.nextElementSibling;
+    const expandcollapse = colresultElem.firstElementChild;
+    extras.classList.add('collapsed');
+    expandcollapse.classList.remove('collapser');
+    expandcollapse.classList.add('expander');
+}
+
+function showFilters() {
+    let visibleString = getQueryParameter('visible') || 'all';
+    visibleString = visibleString.toLowerCase();
+    const checkedItems = visibleString.split(',');
+
+    const filterItems = document.getElementsByClassName('filter');
+    for (let i = 0; i < filterItems.length; i++) {
+        filterItems[i].hidden = false;
+
+        if (visibleString != 'all') {
+            filterItems[i].checked = checkedItems.includes(filterItems[i].getAttribute('data-test-result'));
+            filterTable(filterItems[i]);
+        }
+    }
+}
+
+function addCollapse() {
+    // Add links for show/hide all
+    const resulttable = find('table#results-table');
+    const showhideall = document.createElement('p');
+    showhideall.innerHTML = '<a href="javascript:showAllExtras()">Show all details</a> / ' +
+                            '<a href="javascript:hideAllExtras()">Hide all details</a>';
+    resulttable.parentElement.insertBefore(showhideall, resulttable);
+
+    // Add show/hide link to each result
+    findAll('.col-result').forEach(function(elem) {
+        const collapsed = getQueryParameter('collapsed') || 'Passed';
+        const extras = elem.parentNode.nextElementSibling;
+        const expandcollapse = document.createElement('span');
+        if (extras.classList.contains('collapsed')) {
+            expandcollapse.classList.add('expander');
+        } else if (collapsed.includes(elem.innerHTML)) {
+            extras.classList.add('collapsed');
+            expandcollapse.classList.add('expander');
+        } else {
+            expandcollapse.classList.add('collapser');
+        }
+        elem.appendChild(expandcollapse);
+
+        elem.addEventListener('click', function(event) {
+            if (event.currentTarget.parentNode.nextElementSibling.classList.contains('collapsed')) {
+                showExtras(event.currentTarget);
+            } else {
+                hideExtras(event.currentTarget);
+            }
+        });
+    });
+}
+
+function getQueryParameter(name) {
+    const match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
+    return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
+}
+
+function init () { // eslint-disable-line no-unused-vars
+    resetSortHeaders();
+
+    addCollapse();
+
+    showFilters();
+
+    sortColumn(find('.initial-sort'));
+
+    findAll('.sortable').forEach(function(elem) {
+        elem.addEventListener('click',
+            function() {
+                sortColumn(elem);
+            }, false);
+    });
+}
+
+function sortTable(clicked, keyFunc) {
+    const rows = findAll('.results-table-row');
+    const reversed = !clicked.classList.contains('asc');
+    const sortedRows = sort(rows, keyFunc, reversed);
+    /* Whole table is removed here because browsers acts much slower
+     * when appending existing elements.
+     */
+    const thead = document.getElementById('results-table-head');
+    document.getElementById('results-table').remove();
+    const parent = document.createElement('table');
+    parent.id = 'results-table';
+    parent.appendChild(thead);
+    sortedRows.forEach(function(elem) {
+        parent.appendChild(elem);
+    });
+    document.getElementsByTagName('BODY')[0].appendChild(parent);
+}
+
+function sort(items, keyFunc, reversed) {
+    const sortArray = items.map(function(item, i) {
+        return [keyFunc(item), i];
+    });
+
+    sortArray.sort(function(a, b) {
+        const keyA = a[0];
+        const keyB = b[0];
+
+        if (keyA == keyB) return 0;
+
+        if (reversed) {
+            return keyA < keyB ? 1 : -1;
+        } else {
+            return keyA > keyB ? 1 : -1;
+        }
+    });
+
+    return sortArray.map(function(item) {
+        const index = item[1];
+        return items[index];
+    });
+}
+
+function keyAlpha(colIndex) {
+    return function(elem) {
+        return elem.childNodes[1].childNodes[colIndex].firstChild.data.toLowerCase();
+    };
+}
+
+function keyLink(colIndex) {
+    return function(elem) {
+        const dataCell = elem.childNodes[1].childNodes[colIndex].firstChild;
+        return dataCell == null ? '' : dataCell.innerText.toLowerCase();
+    };
+}
+
+function keyResult(colIndex) {
+    return function(elem) {
+        const strings = ['Error', 'Failed', 'Rerun', 'XFailed', 'XPassed',
+            'Skipped', 'Passed'];
+        return strings.indexOf(elem.childNodes[1].childNodes[colIndex].firstChild.data);
+    };
+}
+
+function resetSortHeaders() {
+    findAll('.sort-icon').forEach(function(elem) {
+        elem.parentNode.removeChild(elem);
+    });
+    findAll('.sortable').forEach(function(elem) {
+        const icon = document.createElement('div');
+        icon.className = 'sort-icon';
+        icon.textContent = 'vvv';
+        elem.insertBefore(icon, elem.firstChild);
+        elem.classList.remove('desc', 'active');
+        elem.classList.add('asc', 'inactive');
+    });
+}
+
+function toggleSortStates(elem) {
+    //if active, toggle between asc and desc
+    if (elem.classList.contains('active')) {
+        elem.classList.toggle('asc');
+        elem.classList.toggle('desc');
+    }
+
+    //if inactive, reset all other functions and add ascending active
+    if (elem.classList.contains('inactive')) {
+        resetSortHeaders();
+        elem.classList.remove('inactive');
+        elem.classList.add('active');
+    }
+}
+
+function isAllRowsHidden(value) {
+    return value.hidden == false;
+}
+
+function filterTable(elem) { // eslint-disable-line no-unused-vars
+    const outcomeAtt = 'data-test-result';
+    const outcome = elem.getAttribute(outcomeAtt);
+    const classOutcome = outcome + ' results-table-row';
+    const outcomeRows = document.getElementsByClassName(classOutcome);
+
+    for(let i = 0; i < outcomeRows.length; i++){
+        outcomeRows[i].hidden = !elem.checked;
+    }
+
+    const rows = findAll('.results-table-row').filter(isAllRowsHidden);
+    const allRowsHidden = rows.length == 0 ? true : false;
+    const notFoundMessage = document.getElementById('not-found-message');
+    notFoundMessage.hidden = !allRowsHidden;
+}
+</script>
+    <h1>report.html</h1>
+    <p>Report generated on 26-Apr-2023 at 05:44:48 by <a href="https://pypi.python.org/pypi/pytest-html">pytest-html</a> v3.2.0</p>
+    <h2>Environment</h2>
+    <table id="environment">
+      <tr>
+        <td>Packages</td>
+        <td>{"pluggy": "1.0.0", "pytest": "7.3.1"}</td></tr>
+      <tr>
+        <td>Platform</td>
+        <td>Linux-5.19.0-40-generic-x86_64-with-glibc2.17</td></tr>
+      <tr>
+        <td>Plugins</td>
+        <td>{"anyio": "3.6.2", "html": "3.2.0", "metadata": "2.0.4"}</td></tr>
+      <tr>
+        <td>Python</td>
+        <td>3.8.16</td></tr></table>
+    <h2>Summary</h2>
+    <p>12 tests ran in 27.51 seconds. </p>
+    <p class="filter" hidden="true">(Un)check the boxes to filter the results.</p><input checked="true" class="filter" data-test-result="passed" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="passed">12 passed</span>, <input checked="true" class="filter" data-test-result="skipped" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="skipped">0 skipped</span>, <input checked="true" class="filter" data-test-result="failed" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="failed">0 failed</span>, <input checked="true" class="filter" data-test-result="error" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="error">0 errors</span>, <input checked="true" class="filter" data-test-result="xfailed" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="xfailed">0 expected failures</span>, <input checked="true" class="filter" data-test-result="xpassed" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="xpassed">0 unexpected passes</span>
+    <h2>Results</h2>
+    <table id="results-table">
+      <thead id="results-table-head">
+        <tr>
+          <th class="sortable result initial-sort" col="result">Result</th>
+          <th class="sortable" col="name">Test</th>
+          <th class="sortable" col="duration">Duration</th>
+          <th class="sortable links" col="links">Links</th></tr>
+        <tr hidden="true" id="not-found-message">
+          <th colspan="4">No results found. Try to check the filters</th></tr></thead>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/test_api.py::test_upload_file_face</td>
+          <td class="col-duration">2.41</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>response.content=b&#x27;{&quot;results&quot;:{&quot;file&quot;:&quot;face.jpg&quot;,&quot;background_deviation&quot;:&quot;8.41339&quot;,&quot;background_grayness&quot;:&quot;8&quot;,&quot;blur&quot;:&quot;1.41667&quot;,&quot;blur_face&quot;:&quot;2.71571&quot;,&quot;focus&quot;:&quot;3600.46&quot;,&quot;focus_face&quot;:&quot;4740.3&quot;,&quot;openbr_IPD&quot;:&quot;505.025&quot;,&quot;openbr_confidence&quot;:&quot;1&quot;,&quot;opencv_IPD&quot;:&quot;408.148&quot;,&quot;opencv_eye_count&quot;:&quot;2&quot;,&quot;opencv_face_found&quot;:&quot;1&quot;,&quot;opencv_face_height&quot;:&quot;1363&quot;,&quot;opencv_face_width&quot;:&quot;1363&quot;,&quot;opencv_frontal_face_found&quot;:&quot;1&quot;,&quot;opencv_landmarks_count&quot;:&quot;4&quot;,&quot;opencv_mouth_count&quot;:&quot;1&quot;,&quot;opencv_nose_count&quot;:&quot;1&quot;,&quot;opencv_profile_face_found&quot;:&quot;0&quot;,&quot;over_exposure&quot;:&quot;0.000126054&quot;,&quot;over_exposure_face&quot;:&quot;0.000368722&quot;,&quot;quality&quot;:&quot;9.42509&quot;,&quot;sap_code&quot;:&quot;4&quot;,&quot;skin_ratio_face&quot;:&quot;0.672693&quot;,&quot;skin_ratio_full&quot;:&quot;0.375985&quot;,&quot;image_area&quot;:&quot;5.43418e+06&quot;,&quot;image_channels&quot;:&quot;3&quot;,&quot;image_height&quot;:&quot;2112&quot;,&quot;image_ratio&quot;:&quot;1.21828&quot;,&quot;image_width&quot;:&quot;2573&quot;,&quot;openbr_left_eye_x&quot;:&quot;1332&quot;,&quot;openbr_left_eye_y&quot;:&quot;1055&quot;,&quot;openbr_right_eye_x&quot;:&quot;827&quot;,&quot;openbr_right_eye_y&quot;:&quot;1050&quot;,&quot;opencv_face_center_of_mass_x&quot;:&quot;895.07&quot;,&quot;opencv_face_center_of_mass_y&quot;:&quot;1318.42&quot;,&quot;opencv_face_offset_x&quot;:&quot;-0.160124&quot;,&quot;opencv_face_offset_y&quot;:&quot;-0.274148&quot;,&quot;opencv_face_x&quot;:&quot;399&quot;,&quot;opencv_face_y&quot;:&quot;664&quot;,&quot;opencv_left_eye_x&quot;:&quot;1245&quot;,&quot;opencv_left_eye_y&quot;:&quot;1038&quot;,&quot;opencv_mouth_x&quot;:&quot;1060&quot;,&quot;opencv_mouth_y&quot;:&quot;1696&quot;,&quot;opencv_nose_x&quot;:&quot;1134&quot;,&quot;opencv_nose_y&quot;:&quot;1407&quot;,&quot;opencv_right_eye_x&quot;:&quot;837&quot;,&quot;opencv_right_eye_y&quot;:&quot;1049&quot;},&quot;engine&quot;:&quot;BQAT-core 1.2.0 beta&quot;}&#x27;
+resp={&#x27;results&#x27;: {&#x27;file&#x27;: &#x27;face.jpg&#x27;, &#x27;background_deviation&#x27;: &#x27;8.41339&#x27;, &#x27;background_grayness&#x27;: &#x27;8&#x27;, &#x27;blur&#x27;: &#x27;1.41667&#x27;, &#x27;blur_face&#x27;: &#x27;2.71571&#x27;, &#x27;focus&#x27;: &#x27;3600.46&#x27;, &#x27;focus_face&#x27;: &#x27;4740.3&#x27;, &#x27;openbr_IPD&#x27;: &#x27;505.025&#x27;, &#x27;openbr_confidence&#x27;: &#x27;1&#x27;, &#x27;opencv_IPD&#x27;: &#x27;408.148&#x27;, &#x27;opencv_eye_count&#x27;: &#x27;2&#x27;, &#x27;opencv_face_found&#x27;: &#x27;1&#x27;, &#x27;opencv_face_height&#x27;: &#x27;1363&#x27;, &#x27;opencv_face_width&#x27;: &#x27;1363&#x27;, &#x27;opencv_frontal_face_found&#x27;: &#x27;1&#x27;, &#x27;opencv_landmarks_count&#x27;: &#x27;4&#x27;, &#x27;opencv_mouth_count&#x27;: &#x27;1&#x27;, &#x27;opencv_nose_count&#x27;: &#x27;1&#x27;, &#x27;opencv_profile_face_found&#x27;: &#x27;0&#x27;, &#x27;over_exposure&#x27;: &#x27;0.000126054&#x27;, &#x27;over_exposure_face&#x27;: &#x27;0.000368722&#x27;, &#x27;quality&#x27;: &#x27;9.42509&#x27;, &#x27;sap_code&#x27;: &#x27;4&#x27;, &#x27;skin_ratio_face&#x27;: &#x27;0.672693&#x27;, &#x27;skin_ratio_full&#x27;: &#x27;0.375985&#x27;, &#x27;image_area&#x27;: &#x27;5.43418e+06&#x27;, &#x27;image_channels&#x27;: &#x27;3&#x27;, &#x27;image_height&#x27;: &#x27;2112&#x27;, &#x27;image_ratio&#x27;: &#x27;1.21828&#x27;, &#x27;image_width&#x27;: &#x27;2573&#x27;, &#x27;openbr_left_eye_x&#x27;: &#x27;1332&#x27;, &#x27;openbr_left_eye_y&#x27;: &#x27;1055&#x27;, &#x27;openbr_right_eye_x&#x27;: &#x27;827&#x27;, &#x27;openbr_right_eye_y&#x27;: &#x27;1050&#x27;, &#x27;opencv_face_center_of_mass_x&#x27;: &#x27;895.07&#x27;, &#x27;opencv_face_center_of_mass_y&#x27;: &#x27;1318.42&#x27;, &#x27;opencv_face_offset_x&#x27;: &#x27;-0.160124&#x27;, &#x27;opencv_face_offset_y&#x27;: &#x27;-0.274148&#x27;, &#x27;opencv_face_x&#x27;: &#x27;399&#x27;, &#x27;opencv_face_y&#x27;: &#x27;664&#x27;, &#x27;opencv_left_eye_x&#x27;: &#x27;1245&#x27;, &#x27;opencv_left_eye_y&#x27;: &#x27;1038&#x27;, &#x27;opencv_mouth_x&#x27;: &#x27;1060&#x27;, &#x27;opencv_mouth_y&#x27;: &#x27;1696&#x27;, &#x27;opencv_nose_x&#x27;: &#x27;1134&#x27;, &#x27;opencv_nose_y&#x27;: &#x27;1407&#x27;, &#x27;opencv_right_eye_x&#x27;: &#x27;837&#x27;, &#x27;opencv_right_eye_y&#x27;: &#x27;1049&#x27;}, &#x27;engine&#x27;: &#x27;BQAT-core 1.2.0 beta&#x27;}
+<br/> ------------------------------Captured stderr call------------------------------ <br/>OpenBR sdk path: /usr/local/share/biqt/providers/BIQTFace/config/
+Initializing OpenBR...
+Done initializing OpenBR
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/test_api.py::test_upload_file_iris</td>
+          <td class="col-duration">0.06</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>response.content=b&#x27;{&quot;results&quot;:{&quot;file&quot;:&quot;iris.bmp&quot;,&quot;quality&quot;:&quot;0&quot;,&quot;contrast&quot;:&quot;60&quot;,&quot;iris_diameter&quot;:&quot;216&quot;,&quot;iris_pupil_gs&quot;:&quot;25.175&quot;,&quot;iris_sclera_gs&quot;:&quot;16&quot;,&quot;normalized_contrast&quot;:&quot;1&quot;,&quot;normalized_iris_diameter&quot;:&quot;1&quot;,&quot;normalized_iris_pupil_gs&quot;:&quot;0.95175&quot;,&quot;normalized_iris_sclera_gs&quot;:&quot;0&quot;,&quot;normalized_percent_visible_iris&quot;:&quot;1&quot;,&quot;normalized_sharpness&quot;:&quot;1&quot;,&quot;percent_visible_iris&quot;:&quot;75&quot;,&quot;sharpness&quot;:&quot;159&quot;,&quot;image_height&quot;:&quot;240&quot;,&quot;image_width&quot;:&quot;320&quot;,&quot;iris_center_x&quot;:&quot;148&quot;,&quot;iris_center_y&quot;:&quot;116&quot;},&quot;engine&quot;:&quot;BQAT-core 1.2.0 beta&quot;}&#x27;
+resp={&#x27;results&#x27;: {&#x27;file&#x27;: &#x27;iris.bmp&#x27;, &#x27;quality&#x27;: &#x27;0&#x27;, &#x27;contrast&#x27;: &#x27;60&#x27;, &#x27;iris_diameter&#x27;: &#x27;216&#x27;, &#x27;iris_pupil_gs&#x27;: &#x27;25.175&#x27;, &#x27;iris_sclera_gs&#x27;: &#x27;16&#x27;, &#x27;normalized_contrast&#x27;: &#x27;1&#x27;, &#x27;normalized_iris_diameter&#x27;: &#x27;1&#x27;, &#x27;normalized_iris_pupil_gs&#x27;: &#x27;0.95175&#x27;, &#x27;normalized_iris_sclera_gs&#x27;: &#x27;0&#x27;, &#x27;normalized_percent_visible_iris&#x27;: &#x27;1&#x27;, &#x27;normalized_sharpness&#x27;: &#x27;1&#x27;, &#x27;percent_visible_iris&#x27;: &#x27;75&#x27;, &#x27;sharpness&#x27;: &#x27;159&#x27;, &#x27;image_height&#x27;: &#x27;240&#x27;, &#x27;image_width&#x27;: &#x27;320&#x27;, &#x27;iris_center_x&#x27;: &#x27;148&#x27;, &#x27;iris_center_y&#x27;: &#x27;116&#x27;}, &#x27;engine&#x27;: &#x27;BQAT-core 1.2.0 beta&#x27;}
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/test_api.py::test_upload_file_finger</td>
+          <td class="col-duration">0.63</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>response.content=b&#x27;{&quot;results&quot;:{&quot;file&quot;:&quot;finger.png&quot;,&quot;Width&quot;:1600,&quot;Height&quot;:1500,&quot;NFIQ2&quot;:&quot;75&quot;,&quot;Quantized&quot;:&quot;0&quot;,&quot;Resampled&quot;:&quot;0&quot;,&quot;UniformImage&quot;:&quot;79.19565&quot;,&quot;EmptyImageOrContrastTooLow&quot;:&quot;145.91297&quot;,&quot;FingerprintImageWithMinutiae&quot;:&quot;47&quot;,&quot;SufficientFingerprintForeground&quot;:&quot;89728&quot;,&quot;EdgeStd&quot;:1.1294549905294133},&quot;engine&quot;:&quot;BQAT-core 1.2.0 beta&quot;}&#x27;
+resp={&#x27;results&#x27;: {&#x27;file&#x27;: &#x27;finger.png&#x27;, &#x27;Width&#x27;: 1600, &#x27;Height&#x27;: 1500, &#x27;NFIQ2&#x27;: &#x27;75&#x27;, &#x27;Quantized&#x27;: &#x27;0&#x27;, &#x27;Resampled&#x27;: &#x27;0&#x27;, &#x27;UniformImage&#x27;: &#x27;79.19565&#x27;, &#x27;EmptyImageOrContrastTooLow&#x27;: &#x27;145.91297&#x27;, &#x27;FingerprintImageWithMinutiae&#x27;: &#x27;47&#x27;, &#x27;SufficientFingerprintForeground&#x27;: &#x27;89728&#x27;, &#x27;EdgeStd&#x27;: 1.1294549905294133}, &#x27;engine&#x27;: &#x27;BQAT-core 1.2.0 beta&#x27;}
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/test_api.py::test_upload_file_speech</td>
+          <td class="col-duration">5.97</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>response.content=b&#x27;{&quot;results&quot;:{&quot;file&quot;:&quot;speech.wav&quot;,&quot;Quality&quot;:&quot;0.87030506&quot;,&quot;Noisiness&quot;:&quot;1.6477453&quot;,&quot;Discontinuity&quot;:&quot;2.7291026&quot;,&quot;Coloration&quot;:&quot;1.56615&quot;,&quot;Loudness&quot;:&quot;1.6175456&quot;,&quot;Naturalness&quot;:&quot;2.150651454925537&quot;},&quot;engine&quot;:&quot;BQAT-core 1.2.0 beta&quot;}&#x27;
+resp={&#x27;results&#x27;: {&#x27;file&#x27;: &#x27;speech.wav&#x27;, &#x27;Quality&#x27;: &#x27;0.87030506&#x27;, &#x27;Noisiness&#x27;: &#x27;1.6477453&#x27;, &#x27;Discontinuity&#x27;: &#x27;2.7291026&#x27;, &#x27;Coloration&#x27;: &#x27;1.56615&#x27;, &#x27;Loudness&#x27;: &#x27;1.6175456&#x27;, &#x27;Naturalness&#x27;: &#x27;2.150651454925537&#x27;}, &#x27;engine&#x27;: &#x27;BQAT-core 1.2.0 beta&#x27;}
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/test_api.py::test_upload_base64_face</td>
+          <td class="col-duration">2.68</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>response.content=b&#x27;{&quot;results&quot;:{&quot;file&quot;:&quot;792e3e22-82a5-4ab0-98d3-2c7a23b55c03.jpg&quot;,&quot;background_deviation&quot;:&quot;8.41339&quot;,&quot;background_grayness&quot;:&quot;8&quot;,&quot;blur&quot;:&quot;1.41667&quot;,&quot;blur_face&quot;:&quot;2.71571&quot;,&quot;focus&quot;:&quot;3600.46&quot;,&quot;focus_face&quot;:&quot;4740.3&quot;,&quot;openbr_IPD&quot;:&quot;505.025&quot;,&quot;openbr_confidence&quot;:&quot;1&quot;,&quot;opencv_IPD&quot;:&quot;408.148&quot;,&quot;opencv_eye_count&quot;:&quot;2&quot;,&quot;opencv_face_found&quot;:&quot;1&quot;,&quot;opencv_face_height&quot;:&quot;1363&quot;,&quot;opencv_face_width&quot;:&quot;1363&quot;,&quot;opencv_frontal_face_found&quot;:&quot;1&quot;,&quot;opencv_landmarks_count&quot;:&quot;4&quot;,&quot;opencv_mouth_count&quot;:&quot;1&quot;,&quot;opencv_nose_count&quot;:&quot;1&quot;,&quot;opencv_profile_face_found&quot;:&quot;0&quot;,&quot;over_exposure&quot;:&quot;0.000126054&quot;,&quot;over_exposure_face&quot;:&quot;0.000368722&quot;,&quot;quality&quot;:&quot;9.42509&quot;,&quot;sap_code&quot;:&quot;4&quot;,&quot;skin_ratio_face&quot;:&quot;0.672693&quot;,&quot;skin_ratio_full&quot;:&quot;0.375985&quot;,&quot;image_area&quot;:&quot;5.43418e+06&quot;,&quot;image_channels&quot;:&quot;3&quot;,&quot;image_height&quot;:&quot;2112&quot;,&quot;image_ratio&quot;:&quot;1.21828&quot;,&quot;image_width&quot;:&quot;2573&quot;,&quot;openbr_left_eye_x&quot;:&quot;1332&quot;,&quot;openbr_left_eye_y&quot;:&quot;1055&quot;,&quot;openbr_right_eye_x&quot;:&quot;827&quot;,&quot;openbr_right_eye_y&quot;:&quot;1050&quot;,&quot;opencv_face_center_of_mass_x&quot;:&quot;895.07&quot;,&quot;opencv_face_center_of_mass_y&quot;:&quot;1318.42&quot;,&quot;opencv_face_offset_x&quot;:&quot;-0.160124&quot;,&quot;opencv_face_offset_y&quot;:&quot;-0.274148&quot;,&quot;opencv_face_x&quot;:&quot;399&quot;,&quot;opencv_face_y&quot;:&quot;664&quot;,&quot;opencv_left_eye_x&quot;:&quot;1245&quot;,&quot;opencv_left_eye_y&quot;:&quot;1038&quot;,&quot;opencv_mouth_x&quot;:&quot;1060&quot;,&quot;opencv_mouth_y&quot;:&quot;1696&quot;,&quot;opencv_nose_x&quot;:&quot;1134&quot;,&quot;opencv_nose_y&quot;:&quot;1407&quot;,&quot;opencv_right_eye_x&quot;:&quot;837&quot;,&quot;opencv_right_eye_y&quot;:&quot;1049&quot;},&quot;engine&quot;:&quot;BQAT-core 1.2.0 beta&quot;,&quot;modality&quot;:&quot;face&quot;,&quot;id&quot;:&quot;792e3e22-82a5-4ab0-98d3-2c7a23b55c03&quot;,&quot;timestamp&quot;:&quot;2023-04-26 05:44:31.258108&quot;}&#x27;
+resp={&#x27;results&#x27;: {&#x27;file&#x27;: &#x27;792e3e22-82a5-4ab0-98d3-2c7a23b55c03.jpg&#x27;, &#x27;background_deviation&#x27;: &#x27;8.41339&#x27;, &#x27;background_grayness&#x27;: &#x27;8&#x27;, &#x27;blur&#x27;: &#x27;1.41667&#x27;, &#x27;blur_face&#x27;: &#x27;2.71571&#x27;, &#x27;focus&#x27;: &#x27;3600.46&#x27;, &#x27;focus_face&#x27;: &#x27;4740.3&#x27;, &#x27;openbr_IPD&#x27;: &#x27;505.025&#x27;, &#x27;openbr_confidence&#x27;: &#x27;1&#x27;, &#x27;opencv_IPD&#x27;: &#x27;408.148&#x27;, &#x27;opencv_eye_count&#x27;: &#x27;2&#x27;, &#x27;opencv_face_found&#x27;: &#x27;1&#x27;, &#x27;opencv_face_height&#x27;: &#x27;1363&#x27;, &#x27;opencv_face_width&#x27;: &#x27;1363&#x27;, &#x27;opencv_frontal_face_found&#x27;: &#x27;1&#x27;, &#x27;opencv_landmarks_count&#x27;: &#x27;4&#x27;, &#x27;opencv_mouth_count&#x27;: &#x27;1&#x27;, &#x27;opencv_nose_count&#x27;: &#x27;1&#x27;, &#x27;opencv_profile_face_found&#x27;: &#x27;0&#x27;, &#x27;over_exposure&#x27;: &#x27;0.000126054&#x27;, &#x27;over_exposure_face&#x27;: &#x27;0.000368722&#x27;, &#x27;quality&#x27;: &#x27;9.42509&#x27;, &#x27;sap_code&#x27;: &#x27;4&#x27;, &#x27;skin_ratio_face&#x27;: &#x27;0.672693&#x27;, &#x27;skin_ratio_full&#x27;: &#x27;0.375985&#x27;, &#x27;image_area&#x27;: &#x27;5.43418e+06&#x27;, &#x27;image_channels&#x27;: &#x27;3&#x27;, &#x27;image_height&#x27;: &#x27;2112&#x27;, &#x27;image_ratio&#x27;: &#x27;1.21828&#x27;, &#x27;image_width&#x27;: &#x27;2573&#x27;, &#x27;openbr_left_eye_x&#x27;: &#x27;1332&#x27;, &#x27;openbr_left_eye_y&#x27;: &#x27;1055&#x27;, &#x27;openbr_right_eye_x&#x27;: &#x27;827&#x27;, &#x27;openbr_right_eye_y&#x27;: &#x27;1050&#x27;, &#x27;opencv_face_center_of_mass_x&#x27;: &#x27;895.07&#x27;, &#x27;opencv_face_center_of_mass_y&#x27;: &#x27;1318.42&#x27;, &#x27;opencv_face_offset_x&#x27;: &#x27;-0.160124&#x27;, &#x27;opencv_face_offset_y&#x27;: &#x27;-0.274148&#x27;, &#x27;opencv_face_x&#x27;: &#x27;399&#x27;, &#x27;opencv_face_y&#x27;: &#x27;664&#x27;, &#x27;opencv_left_eye_x&#x27;: &#x27;1245&#x27;, &#x27;opencv_left_eye_y&#x27;: &#x27;1038&#x27;, &#x27;opencv_mouth_x&#x27;: &#x27;1060&#x27;, &#x27;opencv_mouth_y&#x27;: &#x27;1696&#x27;, &#x27;opencv_nose_x&#x27;: &#x27;1134&#x27;, &#x27;opencv_nose_y&#x27;: &#x27;1407&#x27;, &#x27;opencv_right_eye_x&#x27;: &#x27;837&#x27;, &#x27;opencv_right_eye_y&#x27;: &#x27;1049&#x27;}, &#x27;engine&#x27;: &#x27;BQAT-core 1.2.0 beta&#x27;, &#x27;modality&#x27;: &#x27;face&#x27;, &#x27;id&#x27;: &#x27;792e3e22-82a5-4ab0-98d3-2c7a23b55c03&#x27;, &#x27;timestamp&#x27;: &#x27;2023-04-26 05:44:31.258108&#x27;}
+<br/> ------------------------------Captured stderr call------------------------------ <br/>OpenBR sdk path: /usr/local/share/biqt/providers/BIQTFace/config/
+Initializing OpenBR...
+Done initializing OpenBR
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/test_api.py::test_upload_base64_iris</td>
+          <td class="col-duration">0.07</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>response.content=b&#x27;{&quot;results&quot;:{&quot;file&quot;:&quot;f7bf63dc-af69-4fdf-9145-839685826a4c.bmp&quot;,&quot;quality&quot;:&quot;0&quot;,&quot;contrast&quot;:&quot;60&quot;,&quot;iris_diameter&quot;:&quot;216&quot;,&quot;iris_pupil_gs&quot;:&quot;25.175&quot;,&quot;iris_sclera_gs&quot;:&quot;16&quot;,&quot;normalized_contrast&quot;:&quot;1&quot;,&quot;normalized_iris_diameter&quot;:&quot;1&quot;,&quot;normalized_iris_pupil_gs&quot;:&quot;0.95175&quot;,&quot;normalized_iris_sclera_gs&quot;:&quot;0&quot;,&quot;normalized_percent_visible_iris&quot;:&quot;1&quot;,&quot;normalized_sharpness&quot;:&quot;1&quot;,&quot;percent_visible_iris&quot;:&quot;75&quot;,&quot;sharpness&quot;:&quot;159&quot;,&quot;image_height&quot;:&quot;240&quot;,&quot;image_width&quot;:&quot;320&quot;,&quot;iris_center_x&quot;:&quot;148&quot;,&quot;iris_center_y&quot;:&quot;116&quot;},&quot;engine&quot;:&quot;BQAT-core 1.2.0 beta&quot;,&quot;modality&quot;:&quot;iris&quot;,&quot;id&quot;:&quot;f7bf63dc-af69-4fdf-9145-839685826a4c&quot;,&quot;timestamp&quot;:&quot;2023-04-26 05:44:33.944310&quot;}&#x27;
+resp={&#x27;results&#x27;: {&#x27;file&#x27;: &#x27;f7bf63dc-af69-4fdf-9145-839685826a4c.bmp&#x27;, &#x27;quality&#x27;: &#x27;0&#x27;, &#x27;contrast&#x27;: &#x27;60&#x27;, &#x27;iris_diameter&#x27;: &#x27;216&#x27;, &#x27;iris_pupil_gs&#x27;: &#x27;25.175&#x27;, &#x27;iris_sclera_gs&#x27;: &#x27;16&#x27;, &#x27;normalized_contrast&#x27;: &#x27;1&#x27;, &#x27;normalized_iris_diameter&#x27;: &#x27;1&#x27;, &#x27;normalized_iris_pupil_gs&#x27;: &#x27;0.95175&#x27;, &#x27;normalized_iris_sclera_gs&#x27;: &#x27;0&#x27;, &#x27;normalized_percent_visible_iris&#x27;: &#x27;1&#x27;, &#x27;normalized_sharpness&#x27;: &#x27;1&#x27;, &#x27;percent_visible_iris&#x27;: &#x27;75&#x27;, &#x27;sharpness&#x27;: &#x27;159&#x27;, &#x27;image_height&#x27;: &#x27;240&#x27;, &#x27;image_width&#x27;: &#x27;320&#x27;, &#x27;iris_center_x&#x27;: &#x27;148&#x27;, &#x27;iris_center_y&#x27;: &#x27;116&#x27;}, &#x27;engine&#x27;: &#x27;BQAT-core 1.2.0 beta&#x27;, &#x27;modality&#x27;: &#x27;iris&#x27;, &#x27;id&#x27;: &#x27;f7bf63dc-af69-4fdf-9145-839685826a4c&#x27;, &#x27;timestamp&#x27;: &#x27;2023-04-26 05:44:33.944310&#x27;}
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/test_api.py::test_upload_base64_finger</td>
+          <td class="col-duration">0.64</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>response.content=b&#x27;{&quot;results&quot;:{&quot;file&quot;:&quot;faaecc3c-96b6-4fa0-922e-99ca8c83f2f9.png&quot;,&quot;Width&quot;:1600,&quot;Height&quot;:1500,&quot;NFIQ2&quot;:&quot;75&quot;,&quot;Quantized&quot;:&quot;0&quot;,&quot;Resampled&quot;:&quot;0&quot;,&quot;UniformImage&quot;:&quot;79.19565&quot;,&quot;EmptyImageOrContrastTooLow&quot;:&quot;145.91297&quot;,&quot;FingerprintImageWithMinutiae&quot;:&quot;47&quot;,&quot;SufficientFingerprintForeground&quot;:&quot;89728&quot;,&quot;EdgeStd&quot;:1.1294549905294133},&quot;engine&quot;:&quot;BQAT-core 1.2.0 beta&quot;,&quot;modality&quot;:&quot;fingerprint&quot;,&quot;id&quot;:&quot;faaecc3c-96b6-4fa0-922e-99ca8c83f2f9&quot;,&quot;timestamp&quot;:&quot;2023-04-26 05:44:34.019008&quot;}&#x27;
+resp={&#x27;results&#x27;: {&#x27;file&#x27;: &#x27;faaecc3c-96b6-4fa0-922e-99ca8c83f2f9.png&#x27;, &#x27;Width&#x27;: 1600, &#x27;Height&#x27;: 1500, &#x27;NFIQ2&#x27;: &#x27;75&#x27;, &#x27;Quantized&#x27;: &#x27;0&#x27;, &#x27;Resampled&#x27;: &#x27;0&#x27;, &#x27;UniformImage&#x27;: &#x27;79.19565&#x27;, &#x27;EmptyImageOrContrastTooLow&#x27;: &#x27;145.91297&#x27;, &#x27;FingerprintImageWithMinutiae&#x27;: &#x27;47&#x27;, &#x27;SufficientFingerprintForeground&#x27;: &#x27;89728&#x27;, &#x27;EdgeStd&#x27;: 1.1294549905294133}, &#x27;engine&#x27;: &#x27;BQAT-core 1.2.0 beta&#x27;, &#x27;modality&#x27;: &#x27;fingerprint&#x27;, &#x27;id&#x27;: &#x27;faaecc3c-96b6-4fa0-922e-99ca8c83f2f9&#x27;, &#x27;timestamp&#x27;: &#x27;2023-04-26 05:44:34.019008&#x27;}
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/test_api.py::test_upload_base64_speech</td>
+          <td class="col-duration">5.37</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>response.content=b&#x27;{&quot;results&quot;:{&quot;file&quot;:&quot;247e8463-613c-422f-8d2e-0f2887055bc4.wav&quot;,&quot;Quality&quot;:&quot;0.87030506&quot;,&quot;Noisiness&quot;:&quot;1.6477453&quot;,&quot;Discontinuity&quot;:&quot;2.7291026&quot;,&quot;Coloration&quot;:&quot;1.56615&quot;,&quot;Loudness&quot;:&quot;1.6175456&quot;,&quot;Naturalness&quot;:&quot;2.150651454925537&quot;},&quot;engine&quot;:&quot;BQAT-core 1.2.0 beta&quot;,&quot;modality&quot;:&quot;speech&quot;,&quot;id&quot;:&quot;247e8463-613c-422f-8d2e-0f2887055bc4&quot;,&quot;timestamp&quot;:&quot;2023-04-26 05:44:34.680143&quot;}&#x27;
+resp={&#x27;results&#x27;: {&#x27;file&#x27;: &#x27;247e8463-613c-422f-8d2e-0f2887055bc4.wav&#x27;, &#x27;Quality&#x27;: &#x27;0.87030506&#x27;, &#x27;Noisiness&#x27;: &#x27;1.6477453&#x27;, &#x27;Discontinuity&#x27;: &#x27;2.7291026&#x27;, &#x27;Coloration&#x27;: &#x27;1.56615&#x27;, &#x27;Loudness&#x27;: &#x27;1.6175456&#x27;, &#x27;Naturalness&#x27;: &#x27;2.150651454925537&#x27;}, &#x27;engine&#x27;: &#x27;BQAT-core 1.2.0 beta&#x27;, &#x27;modality&#x27;: &#x27;speech&#x27;, &#x27;id&#x27;: &#x27;247e8463-613c-422f-8d2e-0f2887055bc4&#x27;, &#x27;timestamp&#x27;: &#x27;2023-04-26 05:44:34.680143&#x27;}
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/test_api.py::test_upload_base64url_face</td>
+          <td class="col-duration">2.40</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>response.content=b&#x27;{&quot;results&quot;:{&quot;file&quot;:&quot;4173b012-aa4e-4167-a841-28884b41fc98.jpg&quot;,&quot;background_deviation&quot;:&quot;8.41339&quot;,&quot;background_grayness&quot;:&quot;8&quot;,&quot;blur&quot;:&quot;1.41667&quot;,&quot;blur_face&quot;:&quot;2.71571&quot;,&quot;focus&quot;:&quot;3600.46&quot;,&quot;focus_face&quot;:&quot;4740.3&quot;,&quot;openbr_IPD&quot;:&quot;505.025&quot;,&quot;openbr_confidence&quot;:&quot;1&quot;,&quot;opencv_IPD&quot;:&quot;408.148&quot;,&quot;opencv_eye_count&quot;:&quot;2&quot;,&quot;opencv_face_found&quot;:&quot;1&quot;,&quot;opencv_face_height&quot;:&quot;1363&quot;,&quot;opencv_face_width&quot;:&quot;1363&quot;,&quot;opencv_frontal_face_found&quot;:&quot;1&quot;,&quot;opencv_landmarks_count&quot;:&quot;4&quot;,&quot;opencv_mouth_count&quot;:&quot;1&quot;,&quot;opencv_nose_count&quot;:&quot;1&quot;,&quot;opencv_profile_face_found&quot;:&quot;0&quot;,&quot;over_exposure&quot;:&quot;0.000126054&quot;,&quot;over_exposure_face&quot;:&quot;0.000368722&quot;,&quot;quality&quot;:&quot;9.42509&quot;,&quot;sap_code&quot;:&quot;4&quot;,&quot;skin_ratio_face&quot;:&quot;0.672693&quot;,&quot;skin_ratio_full&quot;:&quot;0.375985&quot;,&quot;image_area&quot;:&quot;5.43418e+06&quot;,&quot;image_channels&quot;:&quot;3&quot;,&quot;image_height&quot;:&quot;2112&quot;,&quot;image_ratio&quot;:&quot;1.21828&quot;,&quot;image_width&quot;:&quot;2573&quot;,&quot;openbr_left_eye_x&quot;:&quot;1332&quot;,&quot;openbr_left_eye_y&quot;:&quot;1055&quot;,&quot;openbr_right_eye_x&quot;:&quot;827&quot;,&quot;openbr_right_eye_y&quot;:&quot;1050&quot;,&quot;opencv_face_center_of_mass_x&quot;:&quot;895.07&quot;,&quot;opencv_face_center_of_mass_y&quot;:&quot;1318.42&quot;,&quot;opencv_face_offset_x&quot;:&quot;-0.160124&quot;,&quot;opencv_face_offset_y&quot;:&quot;-0.274148&quot;,&quot;opencv_face_x&quot;:&quot;399&quot;,&quot;opencv_face_y&quot;:&quot;664&quot;,&quot;opencv_left_eye_x&quot;:&quot;1245&quot;,&quot;opencv_left_eye_y&quot;:&quot;1038&quot;,&quot;opencv_mouth_x&quot;:&quot;1060&quot;,&quot;opencv_mouth_y&quot;:&quot;1696&quot;,&quot;opencv_nose_x&quot;:&quot;1134&quot;,&quot;opencv_nose_y&quot;:&quot;1407&quot;,&quot;opencv_right_eye_x&quot;:&quot;837&quot;,&quot;opencv_right_eye_y&quot;:&quot;1049&quot;},&quot;engine&quot;:&quot;BQAT-core 1.2.0 beta&quot;,&quot;modality&quot;:&quot;face&quot;,&quot;id&quot;:&quot;4173b012-aa4e-4167-a841-28884b41fc98&quot;,&quot;timestamp&quot;:&quot;2023-04-26 05:44:40.038755&quot;}&#x27;
+resp={&#x27;results&#x27;: {&#x27;file&#x27;: &#x27;4173b012-aa4e-4167-a841-28884b41fc98.jpg&#x27;, &#x27;background_deviation&#x27;: &#x27;8.41339&#x27;, &#x27;background_grayness&#x27;: &#x27;8&#x27;, &#x27;blur&#x27;: &#x27;1.41667&#x27;, &#x27;blur_face&#x27;: &#x27;2.71571&#x27;, &#x27;focus&#x27;: &#x27;3600.46&#x27;, &#x27;focus_face&#x27;: &#x27;4740.3&#x27;, &#x27;openbr_IPD&#x27;: &#x27;505.025&#x27;, &#x27;openbr_confidence&#x27;: &#x27;1&#x27;, &#x27;opencv_IPD&#x27;: &#x27;408.148&#x27;, &#x27;opencv_eye_count&#x27;: &#x27;2&#x27;, &#x27;opencv_face_found&#x27;: &#x27;1&#x27;, &#x27;opencv_face_height&#x27;: &#x27;1363&#x27;, &#x27;opencv_face_width&#x27;: &#x27;1363&#x27;, &#x27;opencv_frontal_face_found&#x27;: &#x27;1&#x27;, &#x27;opencv_landmarks_count&#x27;: &#x27;4&#x27;, &#x27;opencv_mouth_count&#x27;: &#x27;1&#x27;, &#x27;opencv_nose_count&#x27;: &#x27;1&#x27;, &#x27;opencv_profile_face_found&#x27;: &#x27;0&#x27;, &#x27;over_exposure&#x27;: &#x27;0.000126054&#x27;, &#x27;over_exposure_face&#x27;: &#x27;0.000368722&#x27;, &#x27;quality&#x27;: &#x27;9.42509&#x27;, &#x27;sap_code&#x27;: &#x27;4&#x27;, &#x27;skin_ratio_face&#x27;: &#x27;0.672693&#x27;, &#x27;skin_ratio_full&#x27;: &#x27;0.375985&#x27;, &#x27;image_area&#x27;: &#x27;5.43418e+06&#x27;, &#x27;image_channels&#x27;: &#x27;3&#x27;, &#x27;image_height&#x27;: &#x27;2112&#x27;, &#x27;image_ratio&#x27;: &#x27;1.21828&#x27;, &#x27;image_width&#x27;: &#x27;2573&#x27;, &#x27;openbr_left_eye_x&#x27;: &#x27;1332&#x27;, &#x27;openbr_left_eye_y&#x27;: &#x27;1055&#x27;, &#x27;openbr_right_eye_x&#x27;: &#x27;827&#x27;, &#x27;openbr_right_eye_y&#x27;: &#x27;1050&#x27;, &#x27;opencv_face_center_of_mass_x&#x27;: &#x27;895.07&#x27;, &#x27;opencv_face_center_of_mass_y&#x27;: &#x27;1318.42&#x27;, &#x27;opencv_face_offset_x&#x27;: &#x27;-0.160124&#x27;, &#x27;opencv_face_offset_y&#x27;: &#x27;-0.274148&#x27;, &#x27;opencv_face_x&#x27;: &#x27;399&#x27;, &#x27;opencv_face_y&#x27;: &#x27;664&#x27;, &#x27;opencv_left_eye_x&#x27;: &#x27;1245&#x27;, &#x27;opencv_left_eye_y&#x27;: &#x27;1038&#x27;, &#x27;opencv_mouth_x&#x27;: &#x27;1060&#x27;, &#x27;opencv_mouth_y&#x27;: &#x27;1696&#x27;, &#x27;opencv_nose_x&#x27;: &#x27;1134&#x27;, &#x27;opencv_nose_y&#x27;: &#x27;1407&#x27;, &#x27;opencv_right_eye_x&#x27;: &#x27;837&#x27;, &#x27;opencv_right_eye_y&#x27;: &#x27;1049&#x27;}, &#x27;engine&#x27;: &#x27;BQAT-core 1.2.0 beta&#x27;, &#x27;modality&#x27;: &#x27;face&#x27;, &#x27;id&#x27;: &#x27;4173b012-aa4e-4167-a841-28884b41fc98&#x27;, &#x27;timestamp&#x27;: &#x27;2023-04-26 05:44:40.038755&#x27;}
+<br/> ------------------------------Captured stderr call------------------------------ <br/>OpenBR sdk path: /usr/local/share/biqt/providers/BIQTFace/config/
+Initializing OpenBR...
+Done initializing OpenBR
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/test_api.py::test_upload_base64url_iris</td>
+          <td class="col-duration">0.07</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>response.content=b&#x27;{&quot;results&quot;:{&quot;file&quot;:&quot;cff04ebf-59b1-4037-a2c0-26a69d0c6c24.bmp&quot;,&quot;quality&quot;:&quot;0&quot;,&quot;contrast&quot;:&quot;60&quot;,&quot;iris_diameter&quot;:&quot;216&quot;,&quot;iris_pupil_gs&quot;:&quot;25.175&quot;,&quot;iris_sclera_gs&quot;:&quot;16&quot;,&quot;normalized_contrast&quot;:&quot;1&quot;,&quot;normalized_iris_diameter&quot;:&quot;1&quot;,&quot;normalized_iris_pupil_gs&quot;:&quot;0.95175&quot;,&quot;normalized_iris_sclera_gs&quot;:&quot;0&quot;,&quot;normalized_percent_visible_iris&quot;:&quot;1&quot;,&quot;normalized_sharpness&quot;:&quot;1&quot;,&quot;percent_visible_iris&quot;:&quot;75&quot;,&quot;sharpness&quot;:&quot;159&quot;,&quot;image_height&quot;:&quot;240&quot;,&quot;image_width&quot;:&quot;320&quot;,&quot;iris_center_x&quot;:&quot;148&quot;,&quot;iris_center_y&quot;:&quot;116&quot;},&quot;engine&quot;:&quot;BQAT-core 1.2.0 beta&quot;,&quot;modality&quot;:&quot;iris&quot;,&quot;id&quot;:&quot;cff04ebf-59b1-4037-a2c0-26a69d0c6c24&quot;,&quot;timestamp&quot;:&quot;2023-04-26 05:44:42.445389&quot;}&#x27;
+resp={&#x27;results&#x27;: {&#x27;file&#x27;: &#x27;cff04ebf-59b1-4037-a2c0-26a69d0c6c24.bmp&#x27;, &#x27;quality&#x27;: &#x27;0&#x27;, &#x27;contrast&#x27;: &#x27;60&#x27;, &#x27;iris_diameter&#x27;: &#x27;216&#x27;, &#x27;iris_pupil_gs&#x27;: &#x27;25.175&#x27;, &#x27;iris_sclera_gs&#x27;: &#x27;16&#x27;, &#x27;normalized_contrast&#x27;: &#x27;1&#x27;, &#x27;normalized_iris_diameter&#x27;: &#x27;1&#x27;, &#x27;normalized_iris_pupil_gs&#x27;: &#x27;0.95175&#x27;, &#x27;normalized_iris_sclera_gs&#x27;: &#x27;0&#x27;, &#x27;normalized_percent_visible_iris&#x27;: &#x27;1&#x27;, &#x27;normalized_sharpness&#x27;: &#x27;1&#x27;, &#x27;percent_visible_iris&#x27;: &#x27;75&#x27;, &#x27;sharpness&#x27;: &#x27;159&#x27;, &#x27;image_height&#x27;: &#x27;240&#x27;, &#x27;image_width&#x27;: &#x27;320&#x27;, &#x27;iris_center_x&#x27;: &#x27;148&#x27;, &#x27;iris_center_y&#x27;: &#x27;116&#x27;}, &#x27;engine&#x27;: &#x27;BQAT-core 1.2.0 beta&#x27;, &#x27;modality&#x27;: &#x27;iris&#x27;, &#x27;id&#x27;: &#x27;cff04ebf-59b1-4037-a2c0-26a69d0c6c24&#x27;, &#x27;timestamp&#x27;: &#x27;2023-04-26 05:44:42.445389&#x27;}
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/test_api.py::test_upload_base64url_finger</td>
+          <td class="col-duration">0.63</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>response.content=b&#x27;{&quot;results&quot;:{&quot;file&quot;:&quot;698f0b1f-49cf-4c3e-9fc1-747365e0b1ce.png&quot;,&quot;Width&quot;:1600,&quot;Height&quot;:1500,&quot;NFIQ2&quot;:&quot;75&quot;,&quot;Quantized&quot;:&quot;0&quot;,&quot;Resampled&quot;:&quot;0&quot;,&quot;UniformImage&quot;:&quot;79.19565&quot;,&quot;EmptyImageOrContrastTooLow&quot;:&quot;145.91297&quot;,&quot;FingerprintImageWithMinutiae&quot;:&quot;47&quot;,&quot;SufficientFingerprintForeground&quot;:&quot;89728&quot;,&quot;EdgeStd&quot;:1.1294549905294133},&quot;engine&quot;:&quot;BQAT-core 1.2.0 beta&quot;,&quot;modality&quot;:&quot;fingerprint&quot;,&quot;id&quot;:&quot;698f0b1f-49cf-4c3e-9fc1-747365e0b1ce&quot;,&quot;timestamp&quot;:&quot;2023-04-26 05:44:42.522336&quot;}&#x27;
+resp={&#x27;results&#x27;: {&#x27;file&#x27;: &#x27;698f0b1f-49cf-4c3e-9fc1-747365e0b1ce.png&#x27;, &#x27;Width&#x27;: 1600, &#x27;Height&#x27;: 1500, &#x27;NFIQ2&#x27;: &#x27;75&#x27;, &#x27;Quantized&#x27;: &#x27;0&#x27;, &#x27;Resampled&#x27;: &#x27;0&#x27;, &#x27;UniformImage&#x27;: &#x27;79.19565&#x27;, &#x27;EmptyImageOrContrastTooLow&#x27;: &#x27;145.91297&#x27;, &#x27;FingerprintImageWithMinutiae&#x27;: &#x27;47&#x27;, &#x27;SufficientFingerprintForeground&#x27;: &#x27;89728&#x27;, &#x27;EdgeStd&#x27;: 1.1294549905294133}, &#x27;engine&#x27;: &#x27;BQAT-core 1.2.0 beta&#x27;, &#x27;modality&#x27;: &#x27;fingerprint&#x27;, &#x27;id&#x27;: &#x27;698f0b1f-49cf-4c3e-9fc1-747365e0b1ce&#x27;, &#x27;timestamp&#x27;: &#x27;2023-04-26 05:44:42.522336&#x27;}
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">tests/test_api.py::test_upload_base64url_speech</td>
+          <td class="col-duration">5.31</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>response.content=b&#x27;{&quot;results&quot;:{&quot;file&quot;:&quot;b1413522-7450-40f3-aec9-ec140725dded.wav&quot;,&quot;Quality&quot;:&quot;0.87030506&quot;,&quot;Noisiness&quot;:&quot;1.6477453&quot;,&quot;Discontinuity&quot;:&quot;2.7291026&quot;,&quot;Coloration&quot;:&quot;1.56615&quot;,&quot;Loudness&quot;:&quot;1.6175456&quot;,&quot;Naturalness&quot;:&quot;2.150651454925537&quot;},&quot;engine&quot;:&quot;BQAT-core 1.2.0 beta&quot;,&quot;modality&quot;:&quot;speech&quot;,&quot;id&quot;:&quot;b1413522-7450-40f3-aec9-ec140725dded&quot;,&quot;timestamp&quot;:&quot;2023-04-26 05:44:43.164315&quot;}&#x27;
+resp={&#x27;results&#x27;: {&#x27;file&#x27;: &#x27;b1413522-7450-40f3-aec9-ec140725dded.wav&#x27;, &#x27;Quality&#x27;: &#x27;0.87030506&#x27;, &#x27;Noisiness&#x27;: &#x27;1.6477453&#x27;, &#x27;Discontinuity&#x27;: &#x27;2.7291026&#x27;, &#x27;Coloration&#x27;: &#x27;1.56615&#x27;, &#x27;Loudness&#x27;: &#x27;1.6175456&#x27;, &#x27;Naturalness&#x27;: &#x27;2.150651454925537&#x27;}, &#x27;engine&#x27;: &#x27;BQAT-core 1.2.0 beta&#x27;, &#x27;modality&#x27;: &#x27;speech&#x27;, &#x27;id&#x27;: &#x27;b1413522-7450-40f3-aec9-ec140725dded&#x27;, &#x27;timestamp&#x27;: &#x27;2023-04-26 05:44:43.164315&#x27;}
+<br/></div></td></tr></tbody></table></body></html>

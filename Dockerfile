@@ -18,7 +18,7 @@ LABEL BQAT.Version=$Version
 RUN yum -y update && \
     yum -y install epel-release && \
     yum -y groupinstall "Development Tools" && \
-    yum -y install openssl-devel bzip2-devel libffi-devel xz-devel && \
+    yum -y install sqlite-devel openssl-devel bzip2-devel libffi-devel xz-devel && \
     yum -y install wget
 
 # RUN mkdir -p /root/.deepface/weights
@@ -41,8 +41,8 @@ COPY Pipfile /app/
 
 RUN python3.8 -m pip install --upgrade pip && \
     python3.8 -m pip install pipenv && \
-    pipenv install && \
-    pipenv requirements > requirements.txt && \
+    pipenv install --dev && \
+    pipenv requirements --dev > requirements.txt && \
     python3.8 -m pip install -r requirements.txt
 
 COPY bqat/bqat_core/misc/haarcascade_smile.xml bqat_core/misc/haarcascade_smile.xml
@@ -64,6 +64,7 @@ RUN conda-lock install --name nisqa conda-lock.yml && \
 
 COPY bqat ./bqat/
 COPY api ./api/
+COPY tests ./tests/
 
 ENTRYPOINT [ "/bin/bash", "-l", "-c" ]
 CMD [ "python3.8 -m api" ]
