@@ -34,7 +34,7 @@ app = FastAPI(
 settings = Settings()
 
 
-app.include_router(scan)
+app.include_router(scan, tags=["/"])
 
 
 def create_app():
