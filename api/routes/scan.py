@@ -1,4 +1,5 @@
 import shutil
+from base64 import standard_b64decode, urlsafe_b64decode
 from pathlib import Path
 from uuid import uuid4
 
@@ -7,7 +8,6 @@ from fastapi.responses import JSONResponse
 
 from api.config.models import Modality, Task
 from bqat.bqat_core import __version__, scan
-from base64 import standard_b64decode, urlsafe_b64decode
 
 router = APIRouter()
 
@@ -77,12 +77,13 @@ async def scan_file(
         data = (
             urlsafe_b64decode(task.data) if urlsafe else standard_b64decode(task.data)
         )
-    except:
+    except Exception as e:
+        print(f"retry: {str(e)}")
         try:
             data = (
-                urlsafe_b64decode(task.data + "=")
+                urlsafe_b64decode(task.data + "=" * (4 - len(task.data) % 4))
                 if urlsafe
-                else standard_b64decode(task.data + "=")
+                else standard_b64decode(task.data + "=" * (4 - len(task.data) % 4))
             )
         except Exception as e:
             raise HTTPException(
