@@ -3,9 +3,9 @@ version: '3.9'
 services:
 
   server:
-    image: bqat-stateless
+    image: docker.io/library/bqat-stateless
     build: .
-    shm_size: 2gb
+    shm_size: 8gb
     ports:
       - 8848:8848
     environment:

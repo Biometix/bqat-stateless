@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 
-FROM mitre/biqt:latest
+# FROM mitre/biqt:latest
+FROM ghcr.io/mitre/biqt:latest
 
 WORKDIR /app
 
@@ -18,8 +19,15 @@ LABEL BQAT.Version=$Version
 RUN yum -y update && \
     yum -y install epel-release && \
     yum -y groupinstall "Development Tools" && \
+    yum install -y cmake3 opencv opencv-devel && \
     yum -y install sqlite-devel openssl-devel bzip2-devel libffi-devel xz-devel && \
     yum -y install wget
+
+COPY bqat/bqat_core/misc/BIQT-IRIS /app/biqt-iris/
+
+RUN cd biqt-iris && mkdir build && cd build && \
+    cmake3 -DBIQT_HOME=/usr/local/share/biqt -DCMAKE_BUILD_TYPE=Release .. && \
+    make -j4 && make install
 
 # RUN mkdir -p /root/.deepface/weights
 
@@ -58,7 +66,7 @@ USER assessor
 RUN curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-$(uname)-$(uname -m).sh"
 RUN ( echo yes ; echo yes ; echo mamba ; echo yes ) | bash Mambaforge-$(uname)-$(uname -m).sh
 SHELL ["/bin/bash", "-l" ,"-c"]
-RUN mamba install --channel=conda-forge --name=base conda-lock
+RUN mamba install --channel=conda-forge --name=base conda-lock=1.4
 RUN conda-lock install --name nisqa conda-lock.yml && \
     mamba clean -afy
 
