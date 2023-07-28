@@ -6,7 +6,7 @@ services:
     image: ghcr.io/biometix/bqat-stateless:latest
     build:
       context: https://github.com/Biometix/bqat-stateless.git
-      shm_size: '2gb'
-    shm_size: 2gb
+      shm_size: '8gb'
+    shm_size: 8gb
     ports:
       - 8848:8848

@@ -10,11 +10,16 @@ mediapipe = "*"
 wsq = "*"
 pillow = "*"
 fastapi = "*"
+email-validator = "*"
 uvicorn = {extras = ["standard"], version = "*"}
 rich = "*"
 python-multipart = "*"
 scipy = "*"
 pandas = "*"
+pydantic = "==1.*"
+imutils = "*"
+scikit-image = "*"
+shapely = "*"
 
 
 [dev-packages]
