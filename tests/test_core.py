@@ -1,12 +1,12 @@
-# import csv
-# import json
-# import math
-# import random
+import csv
+import json
+import math
+import random
 
-# from bqat.bqat_core.face import scan_face
-# from bqat.bqat_core.finger import scan_finger
-# from bqat.bqat_core.iris import scan_iris
-# from bqat.bqat_core.speech import process_speech
+from bqat.bqat_core.face import scan_face
+from bqat.bqat_core.finger import scan_finger
+from bqat.bqat_core.iris import scan_iris
+from bqat.bqat_core.speech import process_speech
 
 # def test_face_default():
 #     """
@@ -48,7 +48,11 @@
 #         assert isinstance(output, dict)
 #         assert output.get("log") == None
 #         for k, _ in test.items():
-#             assert output[k] == test[k]
+#             try:
+#                 assert output[k] == float(test[k])
+#             except Exception as e:
+#                 print(str(e))
+#                 assert output[k] == test[k]
 
 
 # def test_finger_nfiq2():
@@ -91,9 +95,13 @@
 #         output = scan_iris(test.pop("file"))
 
 #         assert isinstance(output, dict)
-#         assert output.get("log") == None
+#         assert "resize" in output.get("log").keys()
 #         for k, _ in test.items():
-#             assert output[k] == test[k]
+#             try:
+#                 assert output[k] == float(test[k])
+#             except Exception as e:
+#                 print(str(e))
+#                 assert output[k] == test[k]
 
 
 # def test_speech_normal():
