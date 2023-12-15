@@ -51,7 +51,8 @@ async def scan_file(
             detail=f"scan failed, please request params: {str(e)}",
         )
     finally:
-        shutil.rmtree(str(temp))
+        # shutil.rmtree(str(temp))
+        pass
     return JSONResponse(status_code=status.HTTP_200_OK, content=result)
 
 
@@ -121,5 +122,6 @@ async def scan_file(
             detail=f"scan failed, please request params: {str(e)}",
         )
     finally:
-        shutil.rmtree(str(temp))
+        # shutil.rmtree(str(temp))
+        pass
     return JSONResponse(status_code=status.HTTP_200_OK, content=result)
