@@ -3,8 +3,12 @@ version: '3.9'
 services:
 
   server:
-    image: docker.io/library/bqat-stateless
-    build: .
+    image: bqat-stateless:latest
+    build: 
+      context: .
+      # args:
+      #   - VER_CORE=value
+      #   - VER_API=value
     shm_size: 8gb
     ports:
       - 8848:8848
@@ -14,3 +18,5 @@ services:
       - ./api:/app/api
       - ./bqat:/app/bqat
       - ./tests:/app/tests
+    # command:
+    #   - uvicorn api.app:app --host 0.0.0.0 --port 8848 --workers 8
