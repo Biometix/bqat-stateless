@@ -47,5 +47,5 @@ def create_app():
         host=settings.HOST,
         workers=threads - 2 if threads > 3 else 1,
         port=settings.PORT,
-        reload=settings.DEBUG_MODE,
+        # reload=settings.DEBUG_MODE,
     )

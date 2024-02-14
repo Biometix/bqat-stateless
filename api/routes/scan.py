@@ -16,6 +16,7 @@ router = APIRouter()
 async def scan_file(
     modality: Modality,
     file: UploadFile,
+    engine: str = "default",
 ):
     """
     Upload a biometric file for quality assessment:
@@ -33,7 +34,10 @@ async def scan_file(
 
     options = {"type": "file"}
     if modality == "face":
-        options.update({"engine": "biqt"})
+        if engine == "biqt":
+            options.update({"engine": "biqt"})
+        else:
+            pass
 
     try:
         result = {
@@ -97,7 +101,10 @@ async def scan_file(
 
     options = {"type": "file"}
     if task.modality == "face":
-        options.update({"engine": "biqt"})
+        if task.engine == "biqt":
+            options.update({"engine": "biqt"})
+        else:
+            pass
 
     try:
         result = {
