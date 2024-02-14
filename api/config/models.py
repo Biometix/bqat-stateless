@@ -1,7 +1,8 @@
-from enum import Enum
 from datetime import datetime
-from pydantic import BaseModel, Field
+from enum import Enum
 from uuid import uuid4
+
+from pydantic import BaseModel, Field
 
 
 class Modality(str, Enum):
@@ -22,6 +23,7 @@ class FileType(str, Enum):
 
 
 class Task(BaseModel):
+    engine: str = "default"
     modality: Modality
     type: FileType
     data: str
