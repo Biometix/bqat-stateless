@@ -1,4 +1,4 @@
-FROM amazonlinux:2023 AS build
+FROM ubuntu:22.04 AS build
 
 SHELL ["/bin/bash", "-c"] 
 
@@ -16,21 +16,18 @@ ARG WITH_BIQT_CONTACT_DETECTOR=ON
 ENV WITH_BIQT_CONTACT_DETECTOR ${WITH_BIQT_CONTACT_DETECTOR}
 
 RUN set -e && \
-    dnf update; dnf upgrade && \
-    dnf -y install git gcc gcc-c++ cmake qt5-qtbase-devel \
-    python3 python3-devel python3-pip cmake python3-devel python3-numpy \
-    gtk2-devel libpng-devel jasper-devel openexr-devel libwebp-devel \
-    libjpeg-turbo-devel libtiff-devel tbb-devel libv4l-devel \
-    eigen3-devel freeglut-devel mesa-libGL mesa-libGL-devel \
-    boost boost-thread boost-devel gstreamer1-plugins-base && \
+    apt update && \
+    apt upgrade -y; \
+    DEBIAN_FRONTEND=noninteractive apt -y install git less vim cmake g++ curl libopencv-dev libjsoncpp-dev pip && \
     pip install wheel; \
     if [[ "${WITH_BIQT_FACE}" == "ON" ]]; then \
     set -e; \
     echo "Installing QT5 for BIQT Face."; \
-    # if  [ "${QUIRK_STRIP_QT5CORE_METADATA}" == "ON" ]; then \
-    # echo "Stripping libQt5Core.so of its ABI metadata."; \
-    # strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so; \
-    # fi; \
+    DEBIAN_FRONTEND=noninteractive apt -y install qtbase5-dev; \
+    if  [ "${QUIRK_STRIP_QT5CORE_METADATA}" == "ON" ]; then \
+    echo "Stripping libQt5Core.so of its ABI metadata."; \
+    strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so; \
+    fi; \
     fi;
 
 ARG BIQT_COMMIT=master
@@ -38,8 +35,6 @@ ENV BIQT_COMMIT ${BIQT_COMMIT}
 
 # Clone and install BIQT from MITRE Github.
 RUN set -e; \
-    dnf update; dnf upgrade && \
-    dnf -y install git g++ opencv-devel jsoncpp-devel cmake; \
     echo "BIQT_COMMIT=${BIQT_COMMIT}" ; \
     mkdir /app 2>/dev/null || true; \
     cd /app; \
@@ -62,8 +57,6 @@ COPY bqat/bqat_core/misc/BIQT-IRIS /app/biqt-iris/
 
 # RUN if [ "${WITH_BIQT_IRIS}" == "ON" ]; then \
 RUN source /etc/profile.d/biqt.sh; \
-    dnf update; dnf upgrade && \
-    dnf -y install git gcc cmake; \
     export NUM_CORES=$(cat /proc/cpuinfo | grep -Pc "processor\s*:\s*[0-9]+\s*$"); \
     echo "Builds will use ${NUM_CORES} core(s)."; \
     cd /app/biqt-iris; \
@@ -98,8 +91,6 @@ RUN source /etc/profile.d/biqt.sh; \
 
 # Clone and install OpenBR from GitHub. 
 RUN set -e; \
-    dnf update; dnf upgrade && \
-    dnf -y install git gcc cmake; \
     if [ "${WITH_BIQT_FACE}" == "ON" ]; then \
     echo "Using OpenSSL Configuration at ${OPENSSL_CONF}: `cat ${OPENSSL_CONF}`"; \
     mkdir /app 2>/dev/null || true; \
@@ -123,8 +114,6 @@ ARG BIQT_FACE_COMMIT=master
 ENV BIQT_FACE_COMMIT ${BIQT_FACE_COMMIT}
 # Clone and install BIQT Face from the MITRE github repository. 
 RUN set -e; \
-    dnf update; dnf upgrade && \
-    dnf -y install git gcc cmake; \
     source /etc/profile.d/biqt.sh; \
     if [ "${WITH_BIQT_FACE}" == "ON" ]; then \
     echo "BIQT_FACE_COMMIT: ${BIQT_FACE_COMMIT}"; \        
@@ -163,7 +152,7 @@ RUN set -e; \
 #     fi;
 
 
-RUN dnf update && dnf -y install cmake build-essential libssl-dev libdb-dev libdb++-dev libopenjp2-7 libopenjp2-tools libpcsclite-dev libssl-dev libopenjp2-7-dev libjpeg-dev libpng-dev libtiff-dev zlib1g-dev libopenmpi-dev libdb++-dev libsqlite3-dev libhwloc-dev libavcodec-dev libavformat-dev libswscale-dev; \
+RUN apt update && apt -y install cmake build-essential libssl-dev libdb-dev libdb++-dev libopenjp2-7 libopenjp2-tools libpcsclite-dev libssl-dev libopenjp2-7-dev libjpeg-dev libpng-dev libtiff-dev zlib1g-dev libopenmpi-dev libdb++-dev libsqlite3-dev libhwloc-dev libavcodec-dev libavformat-dev libswscale-dev; \
     ( mkdir /app 2>/dev/null || true ); \
     cd /app; \
     git clone --recursive https://github.com/usnistgov/NFIQ2.git; \
@@ -175,16 +164,13 @@ RUN dnf update && dnf -y install cmake build-essential libssl-dev libdb-dev libd
     cmake --install .
 
 
-FROM amazonlinux:2023 AS release
+FROM ubuntu:22.04 AS release
 
 # SHELL ["/bin/bash", "-c"]
 
-RUN dnf -y update && \
-    dnf -y groupinstall "Development Tools" && \
-    dnf install -y cmake opencv opencv-devel && \
-    dnf -y install openssl-devel bzip2-devel libffi-devel xz-devel && \
-    dnf -y install wget
-
+RUN apt update && \
+    apt -y install curl g++ libopencv-core4.5d libopencv-highgui4.5d libopencv-imgcodecs4.5d libopencv-imgproc4.5d libjsoncpp25 libqt5xml5 libqt5sql5  libpython3.10 libopencv-objdetect4.5d libqt5widgets5 libopencv-ml4.5d libopencv-videoio4.5d libpython3.10-dev python3-distutils
+    # apt -y install sqlite-devel openssl-devel bzip2-devel libffi-devel xz-devel
 
 ## BIQT ##
 COPY --from=build /usr/local /usr/local
@@ -218,8 +204,9 @@ COPY bqat/bqat_core/misc/NISQA /app/
 RUN curl -L -O "https://github.com/conda-forge/miniforge/releases/download/23.1.0-4/Mambaforge-$(uname)-$(uname -m).sh" && \
     ( echo yes ; echo yes ; echo mamba ; echo yes ) | bash Mambaforge-$(uname)-$(uname -m).sh
 ENV PATH=/app/mamba/bin:${PATH}
-RUN mamba install --channel=conda-forge --name=base conda-lock=1.4 && \
+RUN mamba install --channel=conda-forge --name=base conda-lock && \
     conda-lock install --name nisqa conda-lock.yml && \
+    mamba install --channel=conda-forge --name=nisqa requests chardet && \
     mamba clean -afy
 
 COPY Pipfile /app/

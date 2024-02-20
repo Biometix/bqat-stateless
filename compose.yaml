@@ -5,7 +5,6 @@ services:
     build:
       context: https://github.com/Biometix/bqat-stateless.git
       shm_size: '8gb'
-      dockerfile: Dockerfile.ubuntu
       # args:
       #   - VER_CORE=value
       #   - VER_API=value
