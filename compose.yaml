@@ -4,7 +4,6 @@ services:
     image: bqat-stateless:latest
     build: 
       context: .
-      dockerfile: Dockerfile.ubuntu
       # args:
       #   - VER_CORE=value
       #   - VER_API=value
