@@ -3,26 +3,23 @@ from base64 import standard_b64decode, urlsafe_b64decode
 from pathlib import Path
 from uuid import uuid4
 
+from bqat.bqat_core import __version__, scan
 from fastapi import APIRouter, Body, HTTPException, UploadFile, status
 from fastapi.responses import JSONResponse
 
 from api.config.models import Modality, Task
-from bqat.bqat_core import __version__, scan
 
 router = APIRouter()
 
 
 @router.post("/file", summary="Post biometric file for assessment")
 async def scan_file(
-    modality: Modality,
     file: UploadFile,
-    engine: str = "default",
 ):
     """
     Upload a biometric file for quality assessment:
 
     - **file**: biometric file
-    - **modality**: specify modality of the biometric
     """
     temp = Path("temp")
     if not temp.exists():
@@ -33,17 +30,12 @@ async def scan_file(
         out.write(data)
 
     options = {"type": "file"}
-    if modality == "face":
-        if engine == "biqt":
-            options.update({"engine": "biqt"})
-        else:
-            pass
 
     try:
         result = {
             "results": scan(
                 file=str(temp_file),
-                mode=modality,
+                mode="face",
                 **options,
             ),
             "engine": f"BQAT-core {__version__}",
@@ -69,8 +61,7 @@ async def scan_file(
     Upload a biometric file (base64) for quality assessment:
 
     - **urlsafe**: (bool) urlsafe encoded or not.
-    - **modality**: specify modality of the biometric.
-    - **type**: biometric file type (png, jpg, wav, jp2, etc.).
+    - **type**: biometric file type (png, jpg, jp2, etc.).
     - **data**: biometric file encoded as base64 string.
     - **id**: biometric file identifier.
     - **timestamp**: ISO 8601 date and time format.
@@ -100,17 +91,12 @@ async def scan_file(
         out.write(data)
 
     options = {"type": "file"}
-    if task.modality == "face":
-        if task.engine == "biqt":
-            options.update({"engine": "biqt"})
-        else:
-            pass
 
     try:
         result = {
             "results": scan(
                 file=str(temp_file),
-                mode=task.modality,
+                mode="face",
                 **options,
             ),
             "engine": f"BQAT-core {__version__}",
@@ -118,7 +104,6 @@ async def scan_file(
         result["results"].update({"file": f"{str(task.id)}.{task.type}"})
         result.update(
             {
-                "modality": task.modality,
                 "id": str(task.id),
                 "timestamp": str(task.timestamp),
             }

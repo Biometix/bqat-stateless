@@ -17,14 +17,14 @@ class FileType(str, Enum):
     jpeg = "jpeg"
     png = "png"
     bmp = "bmp"
-    wsq = "wsq"
+    # wsq = "wsq"
     jp2 = "jp2"
-    wav = "wav"
+    # wav = "wav"
 
 
 class Task(BaseModel):
-    engine: str = "default"
-    modality: Modality
+    # engine: str = "default"
+    # modality: Modality
     type: FileType
     data: str
     id: str = Field(default_factory=uuid4)
