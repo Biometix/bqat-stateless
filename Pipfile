@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-mediapipe = "*"
+mediapipe = "0.10.10"
 wsq = "*"
 pillow = "*"
 fastapi = "*"
