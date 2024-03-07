@@ -21,13 +21,13 @@ RUN dnf update && dnf install -y mesa-libGL python3-pip && dnf clean all && \
     python3 -m pip install -U setuptools && \
     python3 -m pip install -r requirements.txt
 
-# COPY bqat bqat/
-# COPY api api/
+COPY bqat bqat/
+COPY api api/
 
-# ARG VER_CORE
-# ARG VER_API
-# LABEL BQAT.core.version=$VER_CORE
-# LABEL BQAT.api.version=$VER_API
+ARG VER_CORE
+ARG VER_API
+LABEL BQAT.core.version=$VER_CORE
+LABEL BQAT.api.version=$VER_API
 
-# ENTRYPOINT [ "/bin/bash", "-l", "-c" ]
-# CMD [ "python3 -m api" ]
+ENTRYPOINT [ "/bin/bash", "-l", "-c" ]
+CMD [ "python3 -m api" ]
