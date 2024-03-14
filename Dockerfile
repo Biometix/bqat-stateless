@@ -14,7 +14,8 @@ COPY bqat/bqat_core/misc/haarcascade_smile.xml bqat_core/misc/haarcascade_smile.
 # COPY Pipfile /app/
 COPY requirements.txt /app/
 
-RUN dnf update && dnf install -y mesa-libGL python3-pip && dnf clean all && \
+RUN dnf update && dnf install -y mesa-libGL && dnf clean all && \
+    python3 -m ensurepip -U; python3 -m pip install 'pip<24.0' --force-reinstall && \
     # python3 -m pip install pipenv && \
     # pipenv lock && \
     # pipenv requirements > requirements.txt && \
@@ -29,5 +30,5 @@ ARG VER_API
 LABEL BQAT.core.version=$VER_CORE
 LABEL BQAT.api.version=$VER_API
 
-ENTRYPOINT [ "/bin/bash", "-l", "-c" ]
-CMD [ "python3 -m api" ]
+# ENTRYPOINT [ "/bin/bash", "-l", "-c" ]
+# CMD [ "python3 -m api" ]
