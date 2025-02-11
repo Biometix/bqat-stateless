@@ -1,13 +1,20 @@
+<a name="v0.5.0"></a>
+# v0.5.0 (2025-02-11)
+
+## 🚀 Features
+
+- Update core to 1.6.0
+- Add engine selection support [#9](https://gitlab.com/biometix/products/biometric-quality-assessment-tool/bqat-stateless/-/issues/9)
+
 
 <a name="v0.4.1"></a>
-
 # v0.4.1 (2023-12-15)
 
-## 🛠 Fixes
+## 🛠️️ Fixes
 
 - Resolve temp file conflict issue.
 
-## ⚙️ Miscellaneous Tasks
+## 📎 Miscellaneous Tasks
 
 - Update compose file.
 - Refactor build configuration [#5](https://gitlab.com/biometix/products/biometric-quality-assessment-tool/bqat-stateless/-/issues/5)
@@ -16,7 +23,7 @@
 <a name="v0.4.0"></a>
 # v0.4.0 (2023-07-28)
 
-## ⚙️ Miscellaneous Tasks
+## 📎 Miscellaneous Tasks
 
 
 - Rebuilt with latest BQAT-core.
@@ -30,12 +37,12 @@
 - Update iris module
 
 
-## 🛠 Fixes
+## 🛠️️ Fixes
 
 - Iris quality score
 - Fix base64 padding
 
-## ⚙️ Miscellaneous Tasks
+## 📎 Miscellaneous Tasks
 
 - Update test cases for new metrics
 
@@ -55,7 +62,7 @@
 
 - Support base64url format
 
-## ⚙️ Miscellaneous Tasks
+## 📎 Miscellaneous Tasks
 
 - Update metadata
 
@@ -78,7 +85,7 @@
 <a name="v0.1.0"></a>
 # v0.1.0 (2023-03-22)
 
-## ⚙️ Miscellaneous Tasks
+## 📎 Miscellaneous Tasks
 
 - Initial commit
 

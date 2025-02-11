@@ -12,11 +12,11 @@ BQAT-Stateless API provide you with biometric quality assessment capability as s
 
 ## File
 
-You can **submit biometric file as is** for assessment.
+Submit biometric file for assessment.
 
 ## Base64
 
-You can **submit biometric file as Base64 encoded string** for assessment.
+Submit biometric file as **base64 encoded string** for assessment.
 
 """
 
@@ -28,7 +28,7 @@ app = FastAPI(
     version=ver,
     contact={
         "url": "https://biometix.com/",
-        "email": "info@biometix.com",
+        "email": "support@biometix.com",
     },
     license_info={
         "name": "Apache 2.0",
