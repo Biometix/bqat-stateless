@@ -1,15 +1,7 @@
-version: '3.9'
-
 services:
 
   server:
     image: ghcr.io/biometix/bqat-stateless:latest
-    build:
-      context: https://github.com/Biometix/bqat-stateless.git
-      shm_size: '8gb'
-      # args:
-      #   - VER_CORE=value
-      #   - VER_API=value
     shm_size: 8gb
     ports:
       - 8848:8848
