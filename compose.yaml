@@ -12,11 +12,11 @@ services:
       - 8848:8848
     environment:
       DEBUG_MODE: "YES"
+      # WORKERS: 3
     volumes:
       - ./api:/app/api
       - ./bqat:/app/bqat
       - ./tests:/app/tests
     # command:
-    #   - uvicorn api.app:app --host 0.0.0.0 --port 8848 --workers 6
-    # command: 
+    #   - uvicorn api.app:app --host 0.0.0.0 --port 8848 --workers 12
     #   - python3 -m pip install gunicorn; gunicorn api.app:app --workers 6 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8848
