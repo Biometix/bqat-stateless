@@ -1,5 +1,3 @@
-import os
-
 import uvicorn
 from fastapi import FastAPI
 
@@ -19,8 +17,6 @@ Submit biometric file for assessment.
 Submit biometric file as **base64 encoded string** for assessment.
 
 """
-
-threads = os.cpu_count()
 
 app = FastAPI(
     title="BQAT-Stateless",
@@ -45,7 +41,7 @@ def create_app():
     uvicorn.run(
         "api.app:app",
         host=settings.HOST,
-        workers=threads - 2 if threads > 3 else 1,
         port=settings.PORT,
+        workers=settings.WORKERS,
         reload=settings.DEBUG_MODE,
     )

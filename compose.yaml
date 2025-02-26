@@ -3,7 +3,7 @@ services:
   server:
     image: ghcr.io/biometix/bqat-stateless:latest
     shm_size: 8gb
+    # environment:
+    #   - WORKERS=3
     ports:
       - 8848:8848
-    # command:
-    #   - uvicorn api.app:app --host 0.0.0.0 --port 8848 --workers 8
